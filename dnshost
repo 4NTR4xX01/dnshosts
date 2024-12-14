@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Verifica que el script se ejecute como root
+if [[ $EUID -ne 0 ]]; then
+    echo "Por favor, ejecuta este script como root."
+    exit 1
+fi
+
+echo "
+██████╗ ███╗   ██╗███████╗██╗  ██╗ ██████╗ ███████╗████████╗
+██╔══██╗████╗  ██║██╔════╝██║  ██║██╔═══██╗██╔════╝╚══██╔══╝
+██║  ██║██╔██╗ ██║███████╗███████║██║   ██║███████╗   ██║   
+██║  ██║██║╚██╗██║╚════██║██╔══██║██║   ██║╚════██║   ██║   
+██████╔╝██║ ╚████║███████║██║  ██║╚██████╔╝███████║   ██║   
+╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   
+                                        By: 4NTR4xX
+"
+echo "Este script agrega entradas al archivo /etc/hosts."
+
+# Solicitar las IPs
+read -p "IPs: " ip_input
+read -p "DNS: " dns_input
+
+# Separar las entradas en arrays
+IFS=',' read -r -a ip_array <<< "$ip_input"
+IFS=',' read -r -a dns_array <<< "$dns_input"
+
+# Validar que ambas listas tengan la misma longitud
+if [[ ${#ip_array[@]} -ne ${#dns_array[@]} ]]; then
+    echo "El número de IPs y DNS debe ser igual."
+    exit 1
+fi
+
+
+echo "Se agregarán las siguientes entradas al archivo /etc/hosts:"
+for i in "${!ip_array[@]}"; do
+    echo "${ip_array[i]}    ${dns_array[i]}"
+done
+
+read -p "¿Deseas continuar? (s/n): " confirm
+if [[ "$confirm" != "s" ]]; then
+    echo "Operación cancelada."
+    exit 0
+fi
+
+# Agregar entradas al archivo /etc/hosts
+for i in "${!ip_array[@]}"; do
+    ip="${ip_array[i]// /}" 
+    dns="${dns_array[i]// /}" 
+
+    if grep -q "^$ip[[:space:]]*$dns" /etc/hosts; then
+        echo "La entrada ${ip} ${dns} ya existe, se omite."
+    else
+        echo "$ip    $dns" >> /etc/hosts
+        echo "Agregada: $ip    $dns"
+    fi
+done
+
+echo "Operación completada. Verifica el archivo /etc/hosts para confirmar."
